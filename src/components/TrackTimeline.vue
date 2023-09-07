@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useSequencerStore } from '@/store';
+import { storeToRefs } from 'pinia';
 import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
@@ -7,13 +8,11 @@ const props = defineProps<{
 }>()
 
 const store = useSequencerStore()
-const beatsPerMeasure = store.beatsPerMeasure
-const beatDuration = store.beatDuration
-const baseStepCount = store.baseStepCount
+const { beatsPerMeasure, beatDuration, baseStepCount } = storeToRefs(store)
 
 const stepPrecision = ref(1)
-const stepCount = computed(() => baseStepCount * stepPrecision.value)
-const tripletStepCount = computed(() => beatsPerMeasure * 3 * stepPrecision.value)
+const stepCount = computed(() => baseStepCount.value * stepPrecision.value)
+const tripletStepCount = computed(() => beatsPerMeasure.value * 3 * stepPrecision.value)
 
 const steps = ref(Array.from({ length: stepCount.value }, () => false))
 const triplet = ref(false)
@@ -22,8 +21,8 @@ const tripletSteps = ref(Array.from({ length: tripletStepCount.value }, () => fa
 function onStepClick(stepIndex: number) {
     steps.value[stepIndex] = !steps.value[stepIndex]
 
-    if (stepIndex % beatDuration == 0) {
-        let tripletStepIndex = stepIndex * (3 / beatDuration)
+    if (stepIndex % beatDuration.value == 0) {
+        let tripletStepIndex = stepIndex * (3 / beatDuration.value)
         tripletSteps.value[tripletStepIndex] = steps.value[stepIndex]
     }
 
@@ -42,7 +41,7 @@ function onTripletStepClick(tripletStepIndex: number) {
     tripletSteps.value[tripletStepIndex] = !tripletSteps.value[tripletStepIndex]
 
     if (tripletStepIndex % 3 == 0) {
-        let stepIndex = tripletStepIndex * (beatDuration / 3)
+        let stepIndex = tripletStepIndex * (beatDuration.value / 3)
         steps.value[stepIndex] = tripletSteps.value[tripletStepIndex]
     }
 

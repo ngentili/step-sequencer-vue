@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { useSequencerStore } from '@/store';
+import { computed } from 'vue';
 
 const props = defineProps<{
     trackId: string
 }>()
 
 const store = useSequencerStore()
-const track = store.getTrackById(props.trackId)
+const track = computed(() => store.getTrackById(props.trackId))
 
 function onVolumeChange(e: Event) {
     let value = (e.target as HTMLInputElement).valueAsNumber

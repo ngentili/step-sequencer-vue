@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { useSequencerStore } from '@/store';
+import { storeToRefs } from 'pinia';
 
 const store = useSequencerStore()
-const tempo = store.tempo
-const beatsPerMeasure = store.beatsPerMeasure
-const beatDuration = store.beatDuration
-const swing = store.swing
-const isPlaying = store.isPlaying
+const { tempo, beatsPerMeasure, beatDuration, swing, isPlaying } = storeToRefs(store)
 
 function onTempoChange(e: Event) {
     let value = (e.target as HTMLInputElement).valueAsNumber
