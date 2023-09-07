@@ -8,7 +8,7 @@ const props = defineProps<{
 }>()
 
 const store = useSequencerStore()
-const { beatsPerMeasure, beatDuration, baseStepCount } = storeToRefs(store)
+const { beatsPerMeasure, beatUnit, baseStepCount } = storeToRefs(store)
 
 const stepPrecision = ref(1)
 const stepCount = computed(() => baseStepCount.value * stepPrecision.value)
@@ -21,8 +21,8 @@ const tripletSteps = ref(Array.from({ length: tripletStepCount.value }, () => fa
 function onStepClick(stepIndex: number) {
     steps.value[stepIndex] = !steps.value[stepIndex]
 
-    if (stepIndex % beatDuration.value == 0) {
-        let tripletStepIndex = stepIndex * (3 / beatDuration.value)
+    if (stepIndex % beatUnit.value == 0) {
+        let tripletStepIndex = stepIndex * (3 / beatUnit.value)
         tripletSteps.value[tripletStepIndex] = steps.value[stepIndex]
     }
 
@@ -41,12 +41,12 @@ function onTripletStepClick(tripletStepIndex: number) {
     tripletSteps.value[tripletStepIndex] = !tripletSteps.value[tripletStepIndex]
 
     if (tripletStepIndex % 3 == 0) {
-        let stepIndex = tripletStepIndex * (beatDuration.value / 3)
+        let stepIndex = tripletStepIndex * (beatUnit.value / 3)
         steps.value[stepIndex] = tripletSteps.value[tripletStepIndex]
     }
 
     let didEnable = tripletSteps.value[tripletStepIndex]
-    let position = tripletStepIndex / stepCount.value
+    let position = tripletStepIndex / tripletStepCount.value
 
     if (didEnable) {
         store.addLoopSample(props.trackId, position)

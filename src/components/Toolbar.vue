@@ -3,7 +3,7 @@ import { useSequencerStore } from '@/store';
 import { storeToRefs } from 'pinia';
 
 const store = useSequencerStore()
-const { tempo, beatsPerMeasure, beatDuration, swing, isPlaying } = storeToRefs(store)
+const { tempo, beatsPerMeasure, beatUnit, swing, isPlaying } = storeToRefs(store)
 
 function onTempoChange(e: Event) {
     let value = (e.target as HTMLInputElement).valueAsNumber
@@ -13,17 +13,16 @@ function onBeatsPerMeasureChange(e: Event) {
     let value = (e.target as HTMLInputElement).valueAsNumber
     store.beatsPerMeasureChange(value)
 }
-function onBeatDurationChange(e: Event) {
+function onBeatUnitChange(e: Event) {
     let value = (e.target as HTMLInputElement).valueAsNumber
-    store.beatDurationChange(value)
+    store.beatUnitChange(value)
 }
 function onSwingChange(e: Event) {
     let value = (e.target as HTMLInputElement).valueAsNumber
     store.swingChange(value)
 }
 function onPlayingChange(e: Event) {
-    let value = (e.target as HTMLInputElement).checked
-    store.playingChange(value)
+    store.playingChange(!isPlaying.value)
 }
 </script>
 
@@ -38,9 +37,9 @@ function onPlayingChange(e: Event) {
         <span>beatsPerMeasure</span>
     </div>
     <div>
-        <input :style="{ width: '40px' }" type="number" placeholder="beat duration" :value="beatDuration" min="2" max="20"
-            step="2" @change="onBeatDurationChange">
-        <span>beatDuration</span>
+        <input :style="{ width: '40px' }" type="number" placeholder="beat duration" :value="beatUnit" min="2" max="20"
+            step="2" @change="onBeatUnitChange">
+        <span>beatUnit</span>
     </div>
     <div>
         <input :style="{ width: '40px' }" type="number" placeholder="swing" :value="swing" min="0" max="100"

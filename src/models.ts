@@ -4,4 +4,5 @@ export interface Track {
     volume: number
     pan: number
     loopSampleTimes: number[]
+    sampleId: string
 }

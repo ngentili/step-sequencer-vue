@@ -1,34 +1,12 @@
 import { defineStore } from 'pinia'
 import type { Track } from './models'
 
-let testTracks: Track[] = [
-    {
-        id: 'qwer',
-        name: 'kick',
-        pan: -0.25,
-        volume: 0.7,
-        loopSampleTimes: [],
-    },
-    {
-        id: 'asdf',
-        name: 'snare',
-        pan: 0,
-        volume: 0.3,
-        loopSampleTimes: [],
-    },
-    {
-        id: 'zxcv',
-        name: 'hihat',
-        pan: .4,
-        volume: 1,
-        loopSampleTimes: [],
-    }
-]
+type BeatValue = 1 | 2 | 4 | 8 | 16 | 32
 
 export interface SequencerState {
     tempo: number
     beatsPerMeasure: number
-    beatDuration: number
+    beatUnit: number // type of note that recieves one beat
     swing: number
     isPlaying: boolean
     tracks: Track[]
@@ -37,10 +15,10 @@ export interface SequencerState {
 const initialState: SequencerState = {
     tempo: 100,
     beatsPerMeasure: 4,
-    beatDuration: 4,
+    beatUnit: 4,
     swing: 0,
     isPlaying: false,
-    tracks: testTracks,
+    tracks: [],
 }
 
 export const useSequencerStore = defineStore('sequencer', {
@@ -56,7 +34,7 @@ export const useSequencerStore = defineStore('sequencer', {
                 }
                 return track
             },
-        baseStepCount: (state: SequencerState) => state.beatsPerMeasure * state.beatDuration,
+        baseStepCount: (state: SequencerState) => state.beatsPerMeasure * state.beatUnit,
     },
     actions: {
         tempoChange(value: number) {
@@ -71,11 +49,11 @@ export const useSequencerStore = defineStore('sequencer', {
             }
             this.beatsPerMeasure = value
         },
-        beatDurationChange(value: number) {
+        beatUnitChange(value: number) {
             if (value < 2 || value % 2 !== 0) {
-                throw new Error(`invalid swing beatDuration: ${value}`)
+                throw new Error(`invalid swing beatUnit: ${value}`)
             }
-            this.beatDuration = value
+            this.beatUnit = value
         },
         swingChange(value: number) {
             if (value < 0 || value > 100) {
@@ -112,6 +90,19 @@ export const useSequencerStore = defineStore('sequencer', {
                 throw new Error(`loop sample does not exist: trackId ${trackId} position ${position}`)
             }
             track.loopSampleTimes.splice(idx, 1)
+        },
+        addTrack(track: Track) {
+            if (this.trackIds.includes(track.id)) {
+                throw new Error(`trackId already exists: ${track.id}`)
+            }
+            this.tracks.push(track)
+        },
+        removeTrack(trackId: string) {
+            let idx = this.tracks.findIndex(track => track.id === trackId)
+            if (idx < 0) {
+                throw new Error(`trackId does not exist: ${trackId}`)
+            }
+            this.tracks.splice(idx, 1)
         },
     },
 })
