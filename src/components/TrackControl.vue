@@ -1,44 +1,38 @@
 <script setup lang="ts">
-defineProps<{
-    tempo: number
-    beatsPerMeasure: number
-    beatDuration: number
-    swing: number
-    isPlaying: boolean
+import { useSequencerStore } from '@/store';
+
+const props = defineProps<{
+    trackId: string
 }>()
 
-const emit = defineEmits<{
-    tempoChange: [value: number]
-    beatsPerMeasureChange: [value: number]
-    beatDurationChange: [value: number]
-    swingChange: [value: number]
-    playingChange: [value: boolean]
-}>()
+const store = useSequencerStore()
+const track = store.getTrackById(props.trackId)
+
+function onVolumeChange(e: Event) {
+    let value = (e.target as HTMLInputElement).valueAsNumber
+    store.volumeChange(props.trackId, value)
+}
+
+function onPanChange(e: Event) {
+    let value = (e.target as HTMLInputElement).valueAsNumber
+    store.panChange(props.trackId, value)
+}
 </script>
 
 <template>
-    <div>
-        <input type="number" placeholder="tempo"
-            @change="e => emit('tempoChange', (e.target as HTMLInputElement).valueAsNumber)">
-        <div>{{ tempo }}</div>
-    </div>
-    <div>
-        <input type="number" placeholder="beats per measure"
-            @change="e => emit('beatsPerMeasureChange', (e.target as HTMLInputElement).valueAsNumber)">
-        <div>{{ beatsPerMeasure }}</div>
-    </div>
-    <div>
-        <input type="number" placeholder="beat duration"
-            @change="e => emit('beatDurationChange', (e.target as HTMLInputElement).valueAsNumber)">
-        <div>{{ beatDuration }}</div>
-    </div>
-    <div>
-        <input type="number" placeholder="swing"
-            @change="e => emit('swingChange', (e.target as HTMLInputElement).valueAsNumber)">
-        <div>{{ swing }}</div>
-    </div>
-    <div>
-        <button @click="() => emit('playingChange', !isPlaying)">Play/Stop</button>
-        <div>{{ isPlaying }}</div>
+    <div class="flexbox-row">
+        <div>
+            {{ track.name }}
+        </div>
+        <div>
+            <input type="range" min="0" max="1" step="0.01" :value="track.volume" @change="onVolumeChange">
+        </div>
+        <div>
+            <datalist :id="`pan-datalist-${trackId}`">
+                <option value="0"></option>
+            </datalist>
+            <input type="range" min="-1" max="1" step="0.01" :list="`pan-datalist-${trackId}`" :value="track.pan"
+                @change="onPanChange">
+        </div>
     </div>
 </template>
