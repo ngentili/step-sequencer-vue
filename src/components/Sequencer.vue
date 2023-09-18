@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useSequencerStore } from '@/store';
-import { onMounted, watch } from 'vue';
+import { onMounted, onUnmounted, watch } from 'vue';
 import { storeToRefs } from 'pinia'
 import type { Track } from '../models'
 
@@ -41,7 +41,11 @@ watch(swing, (newSwing, oldSwing) => {
 
 // isPlaying change
 watch(isPlaying, async (newIsPlaying, oldIsPlaying) => {
-    if (newIsPlaying) {
+    if (oldIsPlaying === undefined) {
+        // init
+        return
+    }
+    else if (newIsPlaying) {
         await play()
     }
     else {
@@ -119,8 +123,8 @@ async function hashBinaryData(data: ArrayBufferView | ArrayBuffer) {
     return hashHex
 }
 
-function scheduleOneSample(trackId: string, startTime: number) {
-    let audioBuffer = getAudioBufferById(trackId)
+function scheduleOneSample(sampleId: string, position: number) {
+    let audioBuffer = getAudioBufferById(sampleId)
 }
 
 function unscheduleOneSample(trackId: string, startTime: number) {
@@ -129,10 +133,8 @@ function unscheduleOneSample(trackId: string, startTime: number) {
 
 function startScheduler() {
     for (const track of tracks.value) {
-        for (const sampleTime of track.loopSampleTimes) {
-
-            let position = 0
-            scheduleOneSample(track.id, position)
+        for (const position of track.loopSampleTimes) {
+            scheduleOneSample(track.sampleId, position)
         }
     }
 }
@@ -150,10 +152,6 @@ async function stop() {
     stopScheduler()
     await audioContext.suspend()
 }
-
-//
-// testing
-//
 
 onMounted(async () => {
     let kickSampleId = await loadAudioBuffer('/audio/kick.mp3')
@@ -189,4 +187,10 @@ onMounted(async () => {
 
     testTracks.forEach(track => store.addTrack(track))
 })
+
+onUnmounted(() => {
+    store.$state.tracks = []
+})
 </script>
+
+<template></template>
