@@ -4,10 +4,9 @@ import TrackControl from './components/TrackControl.vue'
 import TrackTimeline from './components/TrackTimeline.vue'
 import Sequencer from './components/Sequencer.vue';
 import { useSequencerStore } from './store';
-import { computed } from 'vue';
+import { storeToRefs } from 'pinia';
 
-const store = useSequencerStore()
-const trackIds = computed(() => store.trackIds)
+const { trackIds } = storeToRefs(useSequencerStore())
 </script>
 
 <template>
