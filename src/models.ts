@@ -7,17 +7,17 @@ export interface Track {
     sampleId: string
 }
 
-export class XAudioNode {
+export class XAudioNode<T extends AudioNode = AudioNode> {
 
-    audioNode: AudioNode
+    audioNode: T
     private inputs: XAudioNode[]
 
-    constructor(audioNode: AudioNode) {
+    constructor(audioNode: T) {
         this.audioNode = audioNode
         this.inputs = []
     }
 
-    connectTo(destination: XAudioNode|AudioDestinationNode) {
+    connectTo(destination: XAudioNode | AudioDestinationNode) {
         if (destination instanceof AudioDestinationNode) {
             this.audioNode.connect(destination)
         }
@@ -27,8 +27,28 @@ export class XAudioNode {
         }
     }
 
-    disconnectInputs() {
-        this.inputs.forEach(input => input.disconnectInputs())
+    disconnectAll() {
+        this.inputs.forEach(input => input.disconnectAll())
         this.audioNode.disconnect()
     }
+}
+
+export class TimeWindow {
+
+    from: number // inclusive
+    to: number // exclusive
+
+    constructor(from: number, to: number) {
+        this.from = from
+        this.to = to
+    }
+
+    isInside(value: number) {
+        return value >= this.from && value < this.to
+    }
+}
+
+export interface ScheduledSample {
+    source: AudioBufferSourceNode
+    time: number
 }

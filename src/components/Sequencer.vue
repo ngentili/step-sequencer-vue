@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useSequencerStore } from '@/store';
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { storeToRefs } from 'pinia'
-import { XAudioNode, type Track } from '../models'
+import { XAudioNode, type Track, TimeWindow, type ScheduledSample } from '../models'
 
 //
 // state
@@ -13,10 +13,11 @@ const { tempo, beatsPerMeasure, beatUnit, swing, isPlaying, tracks } = storeToRe
 const trackIds = computed(() => tracks.value.map(track => track.id))
 const measureDuration = computed(() => (60 / tempo.value) * beatsPerMeasure.value)
 
-// measureDuration change
-watch(measureDuration, (newLoopDuration, oldLoopDuration) => {
-    throw new Error('not implemented')
-})
+// TODO tempo change ok, beats added/removed broken
+// // measureDuration change
+// watch(measureDuration, (newLoopDuration, oldLoopDuration) => {
+//     throw new Error('not implemented')
+// })
 
 // beatUnit change
 watch(beatUnit, (newBeatUnit, oldBeatUnit) => {
@@ -31,18 +32,42 @@ watch(swing, (newSwing, oldSwing) => {
 // isPlaying change
 watch(isPlaying, async (newIsPlaying, oldIsPlaying) => {
     if (newIsPlaying) {
-        startScheduler()
+        let firstRun = true
+        timer = setInterval(() => {
+            if (firstRun) {
+                measureStartTime = audioContext.currentTime
+                schedulingWindow = new TimeWindow(audioContext.currentTime, audioContext.currentTime + lookahead)
+            }
+            doSchedulingRun()
+            if (firstRun) {
+                firstRun = false
+            }
+        }, interval * 1000)
         await audioContext.resume()
     }
     else {
-        stopScheduler()
+        clearInterval(timer)
+
+        for (const track of tracks.value) {
+
+            let trackSamples = scheduledTrackSamples.get(track.id)!
+
+            // purge all scheduled samples
+            for (let i = trackSamples.length - 1; i >= 0; i--) {
+                const trackSample = trackSamples[i]
+
+                trackSample.source.stop()
+                trackSample.source.disconnect()
+                trackSamples.pop()
+            }
+        }
+
         await audioContext.suspend()
     }
 })
 
 // tracks added or removed
 watch(trackIds, (newTrackIds, oldtrackIds) => {
-    console.log('watch trackIds')
 
     // tracks added
     let tracksIdsAdded = newTrackIds.filter(id => !oldtrackIds.includes(id))
@@ -56,42 +81,21 @@ watch(trackIds, (newTrackIds, oldtrackIds) => {
         trackGainNode.connectTo(masterGainNode)
 
         trackGainNodeMap.set(trackId, trackGainNode)
-
-        // console.log(`track added: ${trackId}`)
     }
 
     // tracks removed
     let tracksIdsRemoved = oldtrackIds.filter(id => !newTrackIds.includes(id))
 
     for (const trackId of tracksIdsRemoved) {
-        let trackGainNode = trackGainNodeMap.get(trackId)
-        if (!trackGainNode) {
-            throw new Error('trackId does not exist')
-        }
-        trackGainNode.disconnectInputs()
+        let trackGainNode = getTrackGainNode(trackId)
+        trackGainNode.disconnectAll()
         trackGainNodeMap.delete(trackId)
-
-        // console.log(`track removed: ${trackId}`)
     }
 })
 
 //
 // audio context
 //
-
-function arraysEqual<T>(array1: T[], array2: T[]): boolean {
-    if (array1.length !== array2.length) {
-        return false;
-    }
-
-    for (let i = 0; i < array1.length; i++) {
-        if (array1[i] !== array2[i]) {
-            return false;
-        }
-    }
-
-    return true;
-}
 
 function getAudioBuffer(sampleId: string) {
     let audioBuffer = audioBufferMap.get(sampleId)
@@ -113,10 +117,14 @@ let audioContext = new AudioContext()
 let masterGainNode = new XAudioNode(new GainNode(audioContext))
 masterGainNode.connectTo(audioContext.destination)
 let trackGainNodeMap = new Map<string, XAudioNode>()
+let scheduledTrackSamples = new Map<string, ScheduledSample[]>()
 let audioBufferMap = new Map<string, AudioBuffer>()
 
 let measureStartTime = 0
-let timerId: number | null = null
+let timer: number | undefined = undefined
+let interval = 0.025
+let lookahead = 0.250
+let schedulingWindow: TimeWindow
 
 async function loadAudioBuffer(url: string) {
     let res = await fetch(url)
@@ -141,49 +149,64 @@ async function hashBinaryData(data: ArrayBufferView | ArrayBuffer) {
 }
 
 function doSchedulingRun() {
+    const now = audioContext.currentTime
+
     if (!isPlaying.value) {
         throw new Error('tried to schedule while not playing')
     }
 
-    console.log(`doSchedulingRun time: ${audioContext.currentTime}`)
-
-    // TODO this is broken
-    if (measureStartTime < audioContext.currentTime) {
+    if (now >= measureStartTime + measureDuration.value) {
         measureStartTime += measureDuration.value
     }
 
     for (const track of tracks.value) {
+
+        if (!scheduledTrackSamples.has(track.id)) {
+            scheduledTrackSamples.set(track.id, [])
+        }
+
+        let trackSamples = scheduledTrackSamples.get(track.id)!
+
         for (const position of track.loopSampleTimes) {
-            let absoluteTime = measureStartTime + (measureDuration.value * position)
+            let targetTime = measureStartTime + (measureDuration.value * position)
 
-            if (absoluteTime < audioContext.currentTime) {
-                throw new Error('tried to schedule in past')
-            }
-            if (absoluteTime >= (measureStartTime + measureDuration.value)) {
-                throw new Error('tried to schedule into next loop')
-            }
+            if (schedulingWindow.isInside(targetTime)) {
 
-            scheduleOneSample(track, absoluteTime)
+                if (trackSamples.find(ts => ts.time === targetTime)) {
+                    continue
+                }
+
+                let scheduledSample = scheduleOneSample(track, targetTime)
+
+                trackSamples.unshift({
+                    time: targetTime,
+                    source: scheduledSample.audioNode
+                })
+            }
         }
     }
 
-    let timeUntilNextMeasure = (measureStartTime + measureDuration.value) - audioContext.currentTime
+    schedulingWindow.from = now
+    schedulingWindow.to = now + lookahead
 
-    let offset: number
-    if (timeUntilNextMeasure < measureDuration.value / 4) {
-        offset = -measureDuration.value / 4
-        console.log('catchup')
+    // purge old scheduled samples
+    for (const track of tracks.value) {
+
+        let trackSamples = scheduledTrackSamples.get(track.id)!
+
+        for (let i = trackSamples.length - 1; i >= 0; i--) {
+            const trackSample = trackSamples[i]
+
+            if (trackSample.time + measureDuration.value < now) {
+                trackSample.source.stop()
+                trackSample.source.disconnect()
+                trackSamples.pop()
+            }
+            else {
+                break
+            }
+        }
     }
-    else {
-        offset = 0
-    }
-
-    let nextRunIntervalMs = (timerId == null ? measureDuration.value / 2 : measureDuration.value + offset) * 1000
-    console.log(`nextRunIntervalMs: ${nextRunIntervalMs}`)
-
-    timerId = setTimeout(() => {
-        doSchedulingRun()
-    }, nextRunIntervalMs)
 }
 
 function scheduleOneSample(track: Track, absoluteTime: number) {
@@ -191,21 +214,10 @@ function scheduleOneSample(track: Track, absoluteTime: number) {
     let trackGainNode = getTrackGainNode(track.id)
 
     let sourceNode = new XAudioNode(new AudioBufferSourceNode(audioContext, { buffer: audioBuffer }))
-    sourceNode.connectTo(trackGainNode);
-    (sourceNode.audioNode as AudioBufferSourceNode).start(absoluteTime)
-}
+    sourceNode.connectTo(trackGainNode)
+    sourceNode.audioNode.start(absoluteTime)
 
-function unscheduleOneSample(trackId: string, startTime: number) {
-
-}
-
-function startScheduler() {
-    measureStartTime = audioContext.currentTime
-    doSchedulingRun()
-}
-
-function stopScheduler() {
-
+    return sourceNode
 }
 
 async function init() {
@@ -243,11 +255,12 @@ async function init() {
     testTracks.forEach(track => store.addTrack(track))
 }
 
-onMounted(init)
-// onUnmounted(() => { store.$state.tracks = [] })
+onMounted(() => {
+    init()
+})
 </script>
 
 <template>
-    <button @click="init()">Add All</button>
-    <button @click="store.$state.tracks = []">Remove All</button>
+    <!-- <button @click="init()">Add All</button> -->
+    <!-- <button @click="store.$state.tracks = []">Remove All</button> -->
 </template>
