@@ -10,6 +10,7 @@ export interface SequencerState {
     swing: number
     isPlaying: boolean
     tracks: Track[]
+    stepPrecision: number
 }
 
 const initialState: SequencerState = {
@@ -19,6 +20,7 @@ const initialState: SequencerState = {
     swing: 0,
     isPlaying: false,
     tracks: [],
+    stepPrecision: 1,
 }
 
 export const useSequencerStore = defineStore('sequencer', {
@@ -35,6 +37,9 @@ export const useSequencerStore = defineStore('sequencer', {
                 return track
             },
         baseStepCount: (state: SequencerState) => state.beatsPerMeasure * state.beatUnit,
+        measureDuration: (state: SequencerState) => (60 / state.tempo) * state.beatsPerMeasure,
+        stepCount(state: SequencerState): number { return (() => this.baseStepCount * state.stepPrecision)() },
+        tripletStepCount: (state: SequencerState) => (() => state.beatsPerMeasure * 3 * state.stepPrecision)(),
     },
     actions: {
         tempoChange(value: number) {

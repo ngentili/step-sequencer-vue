@@ -42,7 +42,7 @@ function onPlayingChange(e: Event) {
         <span>beatUnit</span>
     </div>
     <div>
-        <input :style="{ width: '40px' }" type="number" placeholder="swing" :value="swing" min="0" max="100"
+        <input :style="{ width: '100px' }" type="range" placeholder="swing" :value="swing" min="0" max="50"
             @change="onSwingChange">
         <span>swing</span>
     </div>

@@ -8,14 +8,10 @@ const props = defineProps<{
 }>()
 
 const store = useSequencerStore()
-const { beatsPerMeasure, beatUnit, baseStepCount } = storeToRefs(store)
-
-const stepPrecision = ref(1)
-const stepCount = computed(() => baseStepCount.value * stepPrecision.value)
-const tripletStepCount = computed(() => beatsPerMeasure.value * 3 * stepPrecision.value)
+const { beatUnit, stepCount, tripletStepCount } = storeToRefs(store)
 
 const steps = ref(Array.from({ length: stepCount.value }, () => false))
-const triplet = ref(false)
+const tripletEnabled = ref(false)
 const tripletSteps = ref(Array.from({ length: tripletStepCount.value }, () => false))
 
 function onStepClick(stepIndex: number) {
@@ -79,7 +75,7 @@ watch(stepCount, (newStepCount, oldStepCount) => {
     <div class="flexbox-row">
         <div>
             triplet
-            <input type="checkbox" v-model="triplet">
+            <input type="checkbox" v-model="tripletEnabled">
         </div>
         <div class="flex-1">
             <div class="step-container">
@@ -88,7 +84,7 @@ watch(stepCount, (newStepCount, oldStepCount) => {
                 </div>
             </div>
             <div class="step-container">
-                <div v-if="triplet" v-for="(_, i) in tripletStepCount"
+                <div v-if="tripletEnabled" v-for="(_, i) in tripletStepCount"
                     :class="{ step: true, stepEnabled: tripletSteps[i], stepPrimary: i % 3 == 0 }"
                     @click="() => onTripletStepClick(i)">
                 </div>

@@ -9,9 +9,7 @@ import { XAudioNode, type Track, TimeWindow, type ScheduledSample } from '../mod
 //
 
 const store = useSequencerStore()
-const { tempo, beatsPerMeasure, beatUnit, swing, isPlaying, tracks } = storeToRefs(store)
-const trackIds = computed(() => tracks.value.map(track => track.id))
-const measureDuration = computed(() => (60 / tempo.value) * beatsPerMeasure.value)
+const { tempo, beatsPerMeasure, beatUnit, swing, isPlaying, tracks, trackIds, measureDuration, stepCount } = storeToRefs(store)
 
 // TODO tempo change ok, beats added/removed broken
 // // measureDuration change
@@ -21,11 +19,6 @@ const measureDuration = computed(() => (60 / tempo.value) * beatsPerMeasure.valu
 
 // beatUnit change
 watch(beatUnit, (newBeatUnit, oldBeatUnit) => {
-    throw new Error('not implemented')
-})
-
-// swing change
-watch(swing, (newSwing, oldSwing) => {
     throw new Error('not implemented')
 })
 
@@ -150,6 +143,7 @@ async function hashBinaryData(data: ArrayBufferView | ArrayBuffer) {
 
 function doSchedulingRun() {
     const now = audioContext.currentTime
+    let stepDuration = measureDuration.value / stepCount.value
 
     if (!isPlaying.value) {
         throw new Error('tried to schedule while not playing')
@@ -168,7 +162,21 @@ function doSchedulingRun() {
         let trackSamples = scheduledTrackSamples.get(track.id)!
 
         for (const position of track.loopSampleTimes) {
-            let targetTime = measureStartTime + (measureDuration.value * position)
+            let swingOffset = 0
+
+            let stepIndex = position * stepCount.value
+            let stepIndexRounded = Math.round(position * stepCount.value)
+            let stepIndexDelta = Math.abs(stepIndex - stepIndexRounded)
+
+            // non-triplet step
+            if (stepIndexDelta < 0.05) {
+                // swing every other
+                if (stepIndex % 2 != 0) {
+                    swingOffset = ((swing.value || 0) / 100) * stepDuration
+                }
+            }
+
+            let targetTime = measureStartTime + (measureDuration.value * position) + swingOffset
 
             if (schedulingWindow.isInside(targetTime)) {
 
