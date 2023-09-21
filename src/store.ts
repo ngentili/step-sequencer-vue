@@ -50,13 +50,13 @@ export const useSequencerStore = defineStore('sequencer', {
         },
         beatsPerMeasureChange(value: number) {
             if (value < 2) {
-                throw new Error(`invalid swing beatsPerMeasure: ${value}`)
+                throw new Error(`invalid beatsPerMeasure: ${value}`)
             }
             this.beatsPerMeasure = value
         },
         beatUnitChange(value: number) {
             if (value < 2 || value % 2 !== 0) {
-                throw new Error(`invalid swing beatUnit: ${value}`)
+                throw new Error(`invalid beatUnit: ${value}`)
             }
             this.beatUnit = value
         },
