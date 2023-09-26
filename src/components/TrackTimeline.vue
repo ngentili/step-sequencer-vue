@@ -14,6 +14,14 @@ const steps = ref(Array.from({ length: stepCount.value }, () => false))
 const tripletEnabled = ref(false)
 const tripletSteps = ref(Array.from({ length: tripletStepCount.value }, () => false))
 
+watch(tripletEnabled, () => {
+    if (!tripletEnabled.value) {
+        // disable non-triplet steps when triplet is unchecked
+        tripletSteps.value = tripletSteps.value
+            .map((v, i) => i % 3 == 0 ? v : false)
+    }
+})
+
 function onStepClick(stepIndex: number) {
     steps.value[stepIndex] = !steps.value[stepIndex]
 

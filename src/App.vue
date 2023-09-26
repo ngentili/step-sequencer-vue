@@ -28,7 +28,7 @@ const { trackIds } = storeToRefs(useSequencerStore())
     flex-direction: column;
     margin: 2%;
 
-    @media screen and (min-width: 500px) {
+    @media screen and (min-width: 700px) {
         flex-direction: row;
     }
 }
