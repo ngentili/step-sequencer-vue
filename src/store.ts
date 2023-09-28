@@ -38,6 +38,7 @@ export const useSequencerStore = defineStore('sequencer', {
             },
         baseStepCount: (state: SequencerState) => state.beatsPerMeasure * state.beatUnit,
         measureDuration: (state: SequencerState) => (60 / state.tempo) * state.beatsPerMeasure,
+        stepDuration(state: SequencerState): number { return (() => this.measureDuration / this.stepCount)() },
         stepCount(state: SequencerState): number { return (() => this.baseStepCount * state.stepPrecision)() },
         tripletStepCount: (state: SequencerState) => (() => state.beatsPerMeasure * 3 * state.stepPrecision)(),
     },
@@ -83,18 +84,18 @@ export const useSequencerStore = defineStore('sequencer', {
         },
         addLoopSample(trackId: string, position: number) {
             let track = this.getTrackById(trackId)
-            if (track.loopSampleTimes.find(t => t === position)) {
+            if (track.positions.find(t => t === position)) {
                 throw new Error(`loop sample already exists: trackId ${trackId} position ${position}`)
             }
-            track.loopSampleTimes.push(position)
+            track.positions.push(position)
         },
         removeLoopSample(trackId: string, position: number) {
             let track = this.getTrackById(trackId)
-            let idx = track.loopSampleTimes.findIndex(t => t === position)
+            let idx = track.positions.findIndex(t => t === position)
             if (idx < 0) {
                 throw new Error(`loop sample does not exist: trackId ${trackId} position ${position}`)
             }
-            track.loopSampleTimes.splice(idx, 1)
+            track.positions.splice(idx, 1)
         },
         addTrack(track: Track) {
             if (this.trackIds.includes(track.id)) {

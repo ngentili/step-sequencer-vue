@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useSequencerStore } from '@/store';
-import { computed, onMounted, watch } from 'vue';
+import { useSequencerStore, type SequencerState } from '@/store';
+import { onMounted, onUnmounted, watch } from 'vue';
 import { storeToRefs } from 'pinia'
 import { XAudioNode, type Track, TimeWindow, type ScheduledSample } from '../models'
 
@@ -9,7 +9,7 @@ import { XAudioNode, type Track, TimeWindow, type ScheduledSample } from '../mod
 //
 
 const store = useSequencerStore()
-const { tempo, beatsPerMeasure, beatUnit, swing, isPlaying, tracks, trackIds, measureDuration, stepCount } = storeToRefs(store)
+const { tempo, beatsPerMeasure, beatUnit, swing, isPlaying, tracks, trackIds, measureDuration, stepCount, stepPrecision, stepDuration } = storeToRefs(store)
 
 // TODO tempo change ok, beats added/removed broken
 // // measureDuration change
@@ -40,27 +40,14 @@ watch(isPlaying, async (newIsPlaying, oldIsPlaying) => {
     }
     else {
         clearInterval(timer)
-
-        for (const track of tracks.value) {
-
-            let trackSamples = scheduledTrackSamples.get(track.id)!
-
-            // purge all scheduled samples
-            for (let i = trackSamples.length - 1; i >= 0; i--) {
-                const trackSample = trackSamples[i]
-
-                trackSample.source.stop()
-                trackSample.source.disconnect()
-                trackSamples.pop()
-            }
-        }
+        unscheduleAll()
 
         await audioContext.suspend()
     }
 })
 
 // tracks added or removed
-watch(trackIds, (newTrackIds, oldtrackIds) => {
+watch(trackIds, async (newTrackIds, oldtrackIds) => {
 
     // tracks added
     let tracksIdsAdded = newTrackIds.filter(id => !oldtrackIds.includes(id))
@@ -69,6 +56,13 @@ watch(trackIds, (newTrackIds, oldtrackIds) => {
         if (trackGainNodeMap.has(trackId)) {
             throw new Error('trackId already exists')
         }
+
+        let track = tracks.value.find(t => t.id == trackId)
+        if (!track) {
+            throw new Error('trackId not found')
+        }
+
+        await loadAudioBuffer(track.sampleUrl)
 
         let trackGainNode = new XAudioNode(new GainNode(audioContext))
         trackGainNode.connectTo(masterGainNode)
@@ -120,30 +114,16 @@ let lookahead = 0.250
 let schedulingWindow: TimeWindow
 
 async function loadAudioBuffer(url: string) {
-    let res = await fetch(url)
-    let data = await res.arrayBuffer()
-    let dataHash = await hashBinaryData(data)
-
-    if (!audioBufferMap.has(dataHash)) {
+    if (!audioBufferMap.has(url)) {
+        let res = await fetch(url)
+        let data = await res.arrayBuffer()
         let audioBuffer = await audioContext.decodeAudioData(data)
-        audioBufferMap.set(dataHash, audioBuffer)
+        audioBufferMap.set(url, audioBuffer)
     }
-
-    return dataHash
-}
-
-async function hashBinaryData(data: ArrayBufferView | ArrayBuffer) {
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-    const hashArray = Array.from(new Uint8Array(hashBuffer))
-    const hashHex = hashArray
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('')
-    return hashHex
 }
 
 function doSchedulingRun() {
     const now = audioContext.currentTime
-    let stepDuration = measureDuration.value / stepCount.value
 
     if (!isPlaying.value) {
         throw new Error('tried to schedule while not playing')
@@ -161,7 +141,7 @@ function doSchedulingRun() {
 
         let trackSamples = scheduledTrackSamples.get(track.id)!
 
-        for (const position of track.loopSampleTimes) {
+        for (const position of track.positions) {
             let swingOffset = 0
 
             let stepIndex = position * stepCount.value
@@ -172,7 +152,7 @@ function doSchedulingRun() {
             if (stepIndexDelta < 0.05) {
                 // swing every other
                 if (stepIndex % 2 != 0) {
-                    swingOffset = ((swing.value || 0) / 100) * stepDuration
+                    swingOffset = ((swing.value || 0) / 100) * stepDuration.value
                 }
             }
 
@@ -197,15 +177,30 @@ function doSchedulingRun() {
     schedulingWindow.from = now
     schedulingWindow.to = now + lookahead
 
-    // purge old scheduled samples
+    unscheduleOld()
+}
+
+function scheduleOneSample(track: Track, absoluteTime: number) {
+    let audioBuffer = getAudioBuffer(track.sampleUrl)
+    let trackGainNode = getTrackGainNode(track.id)
+
+    let sourceNode = new XAudioNode(new AudioBufferSourceNode(audioContext, { buffer: audioBuffer }))
+    sourceNode.connectTo(trackGainNode)
+    sourceNode.audioNode.start(absoluteTime)
+
+    return sourceNode
+}
+
+function unscheduleOld() {
     for (const track of tracks.value) {
 
         let trackSamples = scheduledTrackSamples.get(track.id)!
 
+        // purge old scheduled samples
         for (let i = trackSamples.length - 1; i >= 0; i--) {
             const trackSample = trackSamples[i]
 
-            if (trackSample.time + measureDuration.value < now) {
+            if (trackSample.time + measureDuration.value < audioContext.currentTime) {
                 trackSample.source.stop()
                 trackSample.source.disconnect()
                 trackSamples.pop()
@@ -217,54 +212,122 @@ function doSchedulingRun() {
     }
 }
 
-function scheduleOneSample(track: Track, absoluteTime: number) {
-    let audioBuffer = getAudioBuffer(track.sampleId)
-    let trackGainNode = getTrackGainNode(track.id)
+function unscheduleAll() {
+    for (const track of tracks.value) {
 
-    let sourceNode = new XAudioNode(new AudioBufferSourceNode(audioContext, { buffer: audioBuffer }))
-    sourceNode.connectTo(trackGainNode)
-    sourceNode.audioNode.start(absoluteTime)
+        let trackSamples = scheduledTrackSamples.get(track.id)!
 
-    return sourceNode
+        // purge all scheduled samples
+        for (let i = trackSamples.length - 1; i >= 0; i--) {
+            const trackSample = trackSamples[i]
+
+            trackSample.source.stop()
+            trackSample.source.disconnect()
+            trackSamples.pop()
+        }
+    }
 }
 
-async function init() {
-    let kickSampleId = await loadAudioBuffer('/audio/kick.mp3')
-    let snareSampleId = await loadAudioBuffer('/audio/snare.mp3')
-    let hihatSampleId = await loadAudioBuffer('/audio/hihat.mp3')
-
+function init() {
     let testTracks: Track[] = [
         {
             id: 'kick_0',
             name: 'kick',
-            pan: -0.25,
-            volume: 0.7,
-            loopSampleTimes: [],
-            sampleId: kickSampleId,
+            pan: 0,
+            volume: 1,
+            positions: [],
+            sampleUrl: '/audio/kick.mp3',
         },
         {
             id: 'snare_0',
             name: 'snare',
             pan: 0,
-            volume: 0.3,
-            loopSampleTimes: [],
-            sampleId: snareSampleId,
+            volume: 1,
+            positions: [],
+            sampleUrl: '/audio/snare.mp3',
         },
         {
             id: 'hihat_0',
             name: 'hihat',
-            pan: .4,
+            pan: 0,
             volume: 1,
-            loopSampleTimes: [],
-            sampleId: hihatSampleId,
+            positions: [],
+            sampleUrl: '/audio/hihat.mp3',
         }
     ]
 
     testTracks.forEach(track => store.addTrack(track))
 }
 
+// load
 onMounted(() => {
-    init()
+    let querystring = new URLSearchParams(window.location.search)
+    let stateParam = querystring.get('state')
+
+    if (stateParam) {
+        let decoded64 = atob(stateParam)
+        let qsState = JSON.parse(decoded64) as Partial<SequencerState>
+
+        let qsBeatsPerMeasure = qsState.beatsPerMeasure
+        let qsBeatUnit = qsState.beatUnit
+        let qsstepPrecision = qsState.stepPrecision
+        let qsSwing = qsState.swing
+        let qsTempo = qsState.tempo
+        let qsTracks = qsState.tracks
+
+        if (qsBeatsPerMeasure === undefined || qsBeatUnit === undefined || qsstepPrecision === undefined
+            || qsSwing === undefined || qsTempo === undefined || qsTracks === undefined) {
+
+            init()
+        }
+        else {
+            store.$patch({
+                beatsPerMeasure: qsBeatsPerMeasure,
+                beatUnit: qsBeatUnit,
+                stepPrecision: qsstepPrecision,
+                swing: qsSwing,
+                tempo: qsTempo,
+                tracks: qsTracks,
+            })
+        }
+    }
+    else {
+        init()
+    }
+})
+
+// save
+watch([tempo, beatsPerMeasure, beatUnit, swing, tracks, stepPrecision], () => {
+    let data = {
+        tempo: tempo.value,
+        beatsPerMeasure: beatsPerMeasure.value,
+        beatUnit: beatUnit.value,
+        swing: swing.value,
+        tracks: tracks.value,
+        stepPrecision: stepPrecision.value,
+    }
+
+    let json = JSON.stringify(data)
+    let b64 = btoa(json)
+
+    let qsParams = new URLSearchParams(window.location.search)
+    qsParams.set('state', b64)
+    let qs = qsParams.toString()
+
+    // replace querystring without navigating
+    window.history.replaceState({}, '', `?${qs}`)
+
+}, { deep: true })
+
+
+onUnmounted(() => {
+    unscheduleAll()
+
+    trackIds.value.forEach(trackId => store.removeTrack(trackId))
+
+    // trackGainNodeMap.clear()
+    // scheduledTrackSamples.clear()
+    // audioBufferMap.clear()
 })
 </script>
 

@@ -3,8 +3,8 @@ export interface Track {
     name: string
     volume: number
     pan: number
-    loopSampleTimes: number[]
-    sampleId: string
+    positions: number[]
+    sampleUrl: string
 }
 
 export class XAudioNode<T extends AudioNode = AudioNode> {

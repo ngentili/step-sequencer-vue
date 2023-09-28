@@ -8,29 +8,39 @@ const props = defineProps<{
 }>()
 
 const store = useSequencerStore()
-const { beatUnit, stepCount, tripletStepCount } = storeToRefs(store)
 
-const steps = ref(Array.from({ length: stepCount.value }, () => false))
-const tripletEnabled = ref(false)
-const tripletSteps = ref(Array.from({ length: tripletStepCount.value }, () => false))
+// refs
+const { beatUnit, stepCount, tripletStepCount, measureDuration, stepDuration } = storeToRefs(store)
+const tripletEnabled = ref(false) // TODO save to state
 
-watch(tripletEnabled, () => {
-    if (!tripletEnabled.value) {
-        // disable non-triplet steps when triplet is unchecked
-        tripletSteps.value = tripletSteps.value
-            .map((v, i) => i % 3 == 0 ? v : false)
-    }
-})
+// computed
+const track = computed(() => store.getTrackById(props.trackId))
+const trackPositions = computed(() => track.value.positions)
+const expectedPositions = computed(() => Array.from({ length: stepCount.value }, (_, i) => i / stepCount.value))
+const expectedTripletPositions = computed(() => Array.from({ length: tripletStepCount.value }, (_, i) => i / tripletStepCount.value))
+
+const steps = computed(() => expectedPositions.value.map(ep =>
+    trackPositions.value.find(st => ep === st) !== undefined))
+
+const tripletSteps = computed(() => expectedTripletPositions.value.map(ep =>
+    trackPositions.value.find(st => ep === st) !== undefined))
+
+// TODO
+// watch(tripletEnabled, () => {
+//     if (!tripletEnabled.value) {
+//         // disable non-triplet steps when triplet is unchecked
+//         tripletSteps.value = tripletSteps.value
+//             .map((v, i) => i % 3 == 0 ? v : false)
+//     }
+// })
 
 function onStepClick(stepIndex: number) {
-    steps.value[stepIndex] = !steps.value[stepIndex]
-
     if (stepIndex % beatUnit.value == 0) {
         let tripletStepIndex = stepIndex * (3 / beatUnit.value)
-        tripletSteps.value[tripletStepIndex] = steps.value[stepIndex]
+        // tripletSteps.value[tripletStepIndex] = steps.value[stepIndex] // TODO
     }
 
-    let didEnable = steps.value[stepIndex]
+    let didEnable = !steps.value[stepIndex]
     let position = stepIndex / stepCount.value
 
     if (didEnable) {
@@ -42,14 +52,12 @@ function onStepClick(stepIndex: number) {
 }
 
 function onTripletStepClick(tripletStepIndex: number) {
-    tripletSteps.value[tripletStepIndex] = !tripletSteps.value[tripletStepIndex]
-
     if (tripletStepIndex % 3 == 0) {
         let stepIndex = tripletStepIndex * (beatUnit.value / 3)
-        steps.value[stepIndex] = tripletSteps.value[tripletStepIndex]
+        // steps.value[stepIndex] = tripletSteps.value[tripletStepIndex] // TODO
     }
 
-    let didEnable = tripletSteps.value[tripletStepIndex]
+    let didEnable = !tripletSteps.value[tripletStepIndex]
     let position = tripletStepIndex / tripletStepCount.value
 
     if (didEnable) {
@@ -60,23 +68,24 @@ function onTripletStepClick(tripletStepIndex: number) {
     }
 }
 
-watch(stepCount, (newStepCount, oldStepCount) => {
-    let stepCountChange = newStepCount - oldStepCount
+// TODO
+// watch(stepCount, (newStepCount, oldStepCount) => {
+//     let stepCountChange = newStepCount - oldStepCount
 
-    if (stepCountChange > 0) {
-        // add
-        for (let i = 0; i < stepCountChange; i++) {
-            steps.value.push(false)
-        }
-    }
-    else if (stepCountChange < 0) {
-        // remove
-        steps.value.pop()
-        for (let i = 0; i < -stepCountChange; i++) {
-            steps.value.pop()
-        }
-    }
-})
+//     if (stepCountChange > 0) {
+//         // add
+//         for (let i = 0; i < stepCountChange; i++) {
+//             steps.value.push(false)
+//         }
+//     }
+//     else if (stepCountChange < 0) {
+//         // remove
+//         steps.value.pop()
+//         for (let i = 0; i < -stepCountChange; i++) {
+//             steps.value.pop()
+//         }
+//     }
+// })
 </script>
 
 <template>
