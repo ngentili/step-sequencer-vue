@@ -236,7 +236,7 @@ function init() {
             pan: 0,
             volume: 1,
             positions: [],
-            sampleUrl: '/audio/kick.mp3',
+            sampleUrl: './audio/kick.mp3',
         },
         {
             id: 'snare_0',
@@ -244,7 +244,7 @@ function init() {
             pan: 0,
             volume: 1,
             positions: [],
-            sampleUrl: '/audio/snare.mp3',
+            sampleUrl: './audio/snare.mp3',
         },
         {
             id: 'hihat_0',
@@ -252,7 +252,7 @@ function init() {
             pan: 0,
             volume: 1,
             positions: [],
-            sampleUrl: '/audio/hihat.mp3',
+            sampleUrl: './audio/hihat.mp3',
         }
     ]
 
