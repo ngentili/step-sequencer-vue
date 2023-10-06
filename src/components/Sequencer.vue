@@ -1,8 +1,37 @@
 <script setup lang="ts">
 import { useSequencerStore, type SequencerState } from '@/store';
-import { onMounted, onUnmounted, watch } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia'
 import { XAudioNode, type Track, TimeWindow, type ScheduledSample } from '../models'
+
+//
+// worker
+//
+
+export interface SequencerMessageData {
+    type: 'intervalStart' | 'intervalClear' | 'intervalElapsed' | 'debug'
+}
+
+export interface IntervalStartData extends SequencerMessageData {
+    type: 'intervalStart',
+    interval: number,
+}
+
+export interface DebugData extends SequencerMessageData {
+    type: 'debug',
+    log: string,
+}
+
+const worker = new Worker(
+    new URL('../worker', import.meta.url),
+    { type: 'module' },
+)
+
+worker.addEventListener('message', (e: MessageEvent<SequencerMessageData>) => {
+    if (e.data.type == 'debug') {
+        console.log(`worker: ${(e.data as DebugData).log}`)
+    }
+})
 
 //
 // state
@@ -22,26 +51,33 @@ watch(beatUnit, (newBeatUnit, oldBeatUnit) => {
     throw new Error('not implemented')
 })
 
+const firstRun = ref(true)
+
 // isPlaying change
 watch(isPlaying, async (newIsPlaying, oldIsPlaying) => {
-    if (newIsPlaying) {
-        let firstRun = true
-        timer = setInterval(() => {
-            if (firstRun) {
+
+    function workerListener(e: MessageEvent<SequencerMessageData>) {
+        if (e.data.type == 'intervalElapsed') {
+            if (firstRun.value) {
                 measureStartTime = audioContext.currentTime
                 schedulingWindow = new TimeWindow(audioContext.currentTime, audioContext.currentTime + lookahead)
             }
             doSchedulingRun()
-            if (firstRun) {
-                firstRun = false
+            if (firstRun.value) {
+                firstRun.value = false
             }
-        }, interval * 1000)
+        }
+    }
+
+    if (newIsPlaying) {
+        worker.addEventListener('message', workerListener)
+        worker.postMessage({ type: 'intervalStart', interval } as IntervalStartData)
         await audioContext.resume()
     }
     else {
-        clearInterval(timer)
+        worker.removeEventListener('message', workerListener)
+        worker.postMessage({ type: 'intervalClear' } as SequencerMessageData)
         unscheduleAll()
-
         await audioContext.suspend()
     }
 })
@@ -108,7 +144,6 @@ let scheduledTrackSamples = new Map<string, ScheduledSample[]>()
 let audioBufferMap = new Map<string, AudioBuffer>()
 
 let measureStartTime = 0
-let timer: number | undefined = undefined
 let interval = 0.025
 let lookahead = 0.250
 let schedulingWindow: TimeWindow
@@ -126,7 +161,8 @@ function doSchedulingRun() {
     const now = audioContext.currentTime
 
     if (!isPlaying.value) {
-        throw new Error('tried to schedule while not playing')
+        console.warn('tried to schedule while not playing')
+        return
     }
 
     if (now >= measureStartTime + measureDuration.value) {
@@ -215,7 +251,11 @@ function unscheduleOld() {
 function unscheduleAll() {
     for (const track of tracks.value) {
 
-        let trackSamples = scheduledTrackSamples.get(track.id)!
+        let trackSamples = scheduledTrackSamples.get(track.id)
+        if (!trackSamples) {
+            console.warn('track sample not found')
+            return
+        }
 
         // purge all scheduled samples
         for (let i = trackSamples.length - 1; i >= 0; i--) {
