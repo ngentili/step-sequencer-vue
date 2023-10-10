@@ -200,9 +200,10 @@ function doSchedulingRun() {
                 let targetTime = loopMeasureStartTime + (measureDuration.value * position) + swingOffset
 
                 if (targetTime > now + lookahead) {
-                    // past lookahead, can stop looping now
+                    // past lookahead, can stop looping after this loop
+                    // can't break because positions may not be in order
                     scheduleNextMeasure = false
-                    break
+                    continue
                 }
 
                 if (schedulingWindow.isInside(targetTime)) {
