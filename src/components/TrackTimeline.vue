@@ -12,7 +12,7 @@ const props = defineProps<{
 const store = useSequencerStore()
 
 // refs
-const { beatUnit, stepCount, tripletStepCount, measureDuration, stepDuration } = storeToRefs(store)
+const { beatsPerMeasure, beatUnit, stepCount, tripletStepCount, measureDuration, stepDuration } = storeToRefs(store)
 
 // computed
 const track = computed(() => store.getTrackById(props.trackId))
@@ -96,7 +96,8 @@ function onTripletCheckboxChange(e: Event) {
         </div>
         <div class="flex-1">
             <div class="step-container">
-                <div v-for="(_, i) in stepCount" :class="{ step: true, stepEnabled: steps[i], stepPrimary: i % 4 == 0 }"
+                <div v-for="(_, i) in stepCount"
+                    :class="{ step: true, stepEnabled: steps[i], stepPrimary: i % beatsPerMeasure == 0 }"
                     @click="() => onStepClick(i)">
                 </div>
             </div>
