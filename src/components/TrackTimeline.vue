@@ -3,6 +3,7 @@ import { useSequencerStore } from '@/store'
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 
+// TODO check for unexpected positions
 // TODO click and drag step enable/disable
 
 const props = defineProps<{
@@ -12,7 +13,7 @@ const props = defineProps<{
 const store = useSequencerStore()
 
 // refs
-const { beatsPerMeasure, beatUnit, stepCount, tripletStepCount, measureDuration, stepDuration } = storeToRefs(store)
+const { beatUnit, stepCount, tripletStepCount, measureDuration, stepDuration } = storeToRefs(store)
 
 // computed
 const track = computed(() => store.getTrackById(props.trackId))
@@ -68,23 +69,11 @@ function onTripletCheckboxChange(e: Event) {
     store.tripletEnabledChange(props.trackId, enabled)
 }
 
-// TODO
-// watch(stepCount, (newStepCount, oldStepCount) => {
-//     let stepCountChange = newStepCount - oldStepCount
-
-//     if (stepCountChange > 0) {
-//         // add
-//         for (let i = 0; i < stepCountChange; i++) {
-//             steps.value.push(false)
-//         }
-//     }
-//     else if (stepCountChange < 0) {
-//         // remove
-//         steps.value.pop()
-//         for (let i = 0; i < -stepCountChange; i++) {
-//             steps.value.pop()
-//         }
-//     }
+// // step count change
+// watch(stepCount, () => {
+//     // remove all positions
+//     // TODO not working
+//     track.value.positions.forEach(p => store.removeLoopSample(props.trackId, p))
 // })
 </script>
 
@@ -97,7 +86,7 @@ function onTripletCheckboxChange(e: Event) {
         <div class="flex-1">
             <div class="step-container">
                 <div v-for="(_, i) in stepCount"
-                    :class="{ step: true, stepEnabled: steps[i], stepPrimary: i % beatsPerMeasure == 0 }"
+                    :class="{ step: true, stepEnabled: steps[i], stepPrimary: i % beatUnit == 0 }"
                     @click="() => onStepClick(i)">
                 </div>
             </div>
