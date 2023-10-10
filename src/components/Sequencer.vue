@@ -324,60 +324,22 @@ onMounted(() => {
     let stateParam = querystring.get('state')
 
     if (stateParam) {
-        let decoded64 = atob(stateParam)
-        let qsState = JSON.parse(decoded64) as Partial<SequencerState>
+        try {
+            let decoded64 = atob(stateParam)
+            let qsState = JSON.parse(decoded64) as Partial<SequencerState>
+            store.loadAppState(qsState)
 
-        let qsBeatsPerMeasure = qsState.beatsPerMeasure
-        let qsBeatUnit = qsState.beatUnit
-        let qsstepPrecision = qsState.stepPrecision
-        let qsSwing = qsState.swing
-        let qsTempo = qsState.tempo
-        let qsTracks = qsState.tracks
-
-        if (qsBeatsPerMeasure === undefined || qsBeatUnit === undefined || qsstepPrecision === undefined
-            || qsSwing === undefined || qsTempo === undefined || qsTracks === undefined) {
-
-            init()
+            // remove querystring without navigating
+            window.history.replaceState(null, '', '.')
         }
-        else {
-            store.$patch({
-                beatsPerMeasure: qsBeatsPerMeasure,
-                beatUnit: qsBeatUnit,
-                stepPrecision: qsstepPrecision,
-                swing: qsSwing,
-                tempo: qsTempo,
-                tracks: qsTracks,
-            })
+        catch {
+            init()
         }
     }
     else {
         init()
     }
 })
-
-// save
-watch([tempo, beatsPerMeasure, beatUnit, swing, tracks, stepPrecision], () => {
-    let data = {
-        tempo: tempo.value,
-        beatsPerMeasure: beatsPerMeasure.value,
-        beatUnit: beatUnit.value,
-        swing: swing.value,
-        tracks: tracks.value,
-        stepPrecision: stepPrecision.value,
-    }
-
-    let json = JSON.stringify(data)
-    let b64 = btoa(json)
-
-    let qsParams = new URLSearchParams(window.location.search)
-    qsParams.set('state', b64)
-    let qs = qsParams.toString()
-
-    // replace querystring without navigating
-    window.history.replaceState({}, '', `?${qs}`)
-
-}, { deep: true })
-
 
 onUnmounted(() => {
     unscheduleAll()

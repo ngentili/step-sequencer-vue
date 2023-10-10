@@ -41,6 +41,22 @@ export const useSequencerStore = defineStore('sequencer', {
         stepDuration(state: SequencerState): number { return (() => this.measureDuration / this.stepCount)() },
         stepCount(state: SequencerState): number { return (() => this.baseStepCount * state.stepPrecision)() },
         tripletStepCount: (state: SequencerState) => (() => state.beatsPerMeasure * 3 * state.stepPrecision)(),
+        shareUrl: (state: SequencerState) => {
+            let shareableState: Partial<SequencerState> = {
+                beatsPerMeasure: state.beatsPerMeasure,
+                beatUnit: state.beatUnit,
+                stepPrecision: state.stepPrecision,
+                swing: state.swing,
+                tempo: state.tempo,
+                tracks: state.tracks,
+            }
+            let json = JSON.stringify(shareableState)
+            let b64 = btoa(json)
+            let qsParams = new URLSearchParams(window.location.search)
+            qsParams.set('state', b64)
+            let qs = qsParams.toString()
+            return `${window.location.host}?${qs}`
+        },
     },
     actions: {
         tempoChange(value: number) {
@@ -109,6 +125,14 @@ export const useSequencerStore = defineStore('sequencer', {
                 throw new Error(`trackId does not exist: ${trackId}`)
             }
             this.tracks.splice(idx, 1)
+        },
+        loadAppState(loadedState: Partial<SequencerState>) {
+            this.tempo = loadedState.tempo ?? initialState.tempo
+            this.beatsPerMeasure = loadedState.beatsPerMeasure ?? initialState.beatsPerMeasure
+            this.beatUnit = loadedState.beatUnit ?? initialState.beatUnit
+            this.swing = loadedState.swing ?? initialState.swing
+            this.tracks = loadedState.tracks ?? initialState.tracks
+            this.stepPrecision = loadedState.stepPrecision ?? initialState.stepPrecision
         },
     },
 })

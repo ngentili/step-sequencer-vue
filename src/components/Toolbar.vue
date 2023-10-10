@@ -3,7 +3,7 @@ import { useSequencerStore } from '@/store';
 import { storeToRefs } from 'pinia';
 
 const store = useSequencerStore()
-const { tempo, beatsPerMeasure, beatUnit, swing, isPlaying } = storeToRefs(store)
+const { tempo, beatsPerMeasure, beatUnit, swing, isPlaying, shareUrl } = storeToRefs(store)
 
 function onTempoChange(e: Event) {
     let value = (e.target as HTMLInputElement).valueAsNumber
@@ -23,6 +23,9 @@ function onSwingChange(e: Event) {
 }
 function onPlayingChange(e: Event) {
     store.playingChange(!isPlaying.value)
+}
+async function onShareClick(e: Event) {
+    await navigator.clipboard.writeText(shareUrl.value)
 }
 </script>
 
@@ -49,5 +52,8 @@ function onPlayingChange(e: Event) {
     <div>
         <button @click="onPlayingChange">Play/Stop</button>
         <span>{{ isPlaying }}</span>
+    </div>
+    <div>
+        <button @click="onShareClick">Copy URL</button>
     </div>
 </template>
