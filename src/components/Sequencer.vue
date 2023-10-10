@@ -27,12 +27,6 @@ const worker = new Worker(
     { type: 'module' },
 )
 
-worker.addEventListener('message', (e: MessageEvent<SequencerMessageData>) => {
-    if (e.data.type == 'debug') {
-        console.log(`worker: ${(e.data as DebugData).log}`)
-    }
-})
-
 //
 // state
 //
@@ -177,36 +171,56 @@ function doSchedulingRun() {
 
         let trackSamples = scheduledTrackSamples.get(track.id)!
 
-        for (const position of track.positions) {
-            let swingOffset = 0
+        if (track.positions.length == 0) {
+            continue
+        }
 
-            let stepIndex = position * stepCount.value
-            let stepIndexRounded = Math.round(position * stepCount.value)
-            let stepIndexDelta = Math.abs(stepIndex - stepIndexRounded)
+        // keep looping until target time is past lookahead, not stop when all positions are looped once
+        let scheduleNextMeasure = true
+        let loopMeasureStartTime = measureStartTime
 
-            // non-triplet step
-            if (stepIndexDelta < 0.05) {
-                // swing every other
-                if (stepIndex % 2 != 0) {
-                    swingOffset = ((swing.value || 0) / 100) * stepDuration.value
+        while (scheduleNextMeasure) {
+
+            for (const position of track.positions) {
+                let swingOffset = 0
+
+                let stepIndex = position * stepCount.value
+                let stepIndexRounded = Math.round(position * stepCount.value)
+                let stepIndexDelta = Math.abs(stepIndex - stepIndexRounded)
+
+                // non-triplet step
+                if (stepIndexDelta < 0.05) {
+                    // swing every other
+                    if (stepIndex % 2 != 0) {
+                        swingOffset = ((swing.value || 0) / 100) * stepDuration.value
+                    }
+                }
+
+                let targetTime = loopMeasureStartTime + (measureDuration.value * position) + swingOffset
+
+                if (targetTime > now + lookahead) {
+                    // past lookahead, can stop looping now
+                    scheduleNextMeasure = false
+                    break
+                }
+
+                if (schedulingWindow.isInside(targetTime)) {
+
+                    if (trackSamples.find(ts => ts.time === targetTime)) {
+                        // already scheduled
+                        continue
+                    }
+
+                    let scheduledSample = scheduleOneSample(track, targetTime)
+
+                    trackSamples.unshift({
+                        time: targetTime,
+                        source: scheduledSample.audioNode
+                    })
                 }
             }
 
-            let targetTime = measureStartTime + (measureDuration.value * position) + swingOffset
-
-            if (schedulingWindow.isInside(targetTime)) {
-
-                if (trackSamples.find(ts => ts.time === targetTime)) {
-                    continue
-                }
-
-                let scheduledSample = scheduleOneSample(track, targetTime)
-
-                trackSamples.unshift({
-                    time: targetTime,
-                    source: scheduledSample.audioNode
-                })
-            }
+            loopMeasureStartTime += measureDuration.value
         }
     }
 
@@ -217,6 +231,10 @@ function doSchedulingRun() {
 }
 
 function scheduleOneSample(track: Track, absoluteTime: number) {
+    if (absoluteTime < audioContext.currentTime) {
+        console.error('scheduling in past')
+    }
+
     let audioBuffer = getAudioBuffer(track.sampleUrl)
     let trackGainNode = getTrackGainNode(track.id)
 
