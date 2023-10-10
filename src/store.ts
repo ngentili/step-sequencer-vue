@@ -55,7 +55,7 @@ export const useSequencerStore = defineStore('sequencer', {
             let qsParams = new URLSearchParams(window.location.search)
             qsParams.set('state', b64)
             let qs = qsParams.toString()
-            return `${window.location.host}?${qs}`
+            return `${window.location.host}${window.location.pathname}?${qs}`
         },
     },
     actions: {
