@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { useSequencerStore } from '@/store';
-import { storeToRefs } from 'pinia';
-import { computed, ref, watch } from 'vue';
+import { useSequencerStore } from '@/store'
+import { storeToRefs } from 'pinia'
+import { computed, watch } from 'vue'
+
+// TODO click and drag step enable/disable
 
 const props = defineProps<{
     trackId: string
@@ -11,10 +13,10 @@ const store = useSequencerStore()
 
 // refs
 const { beatUnit, stepCount, tripletStepCount, measureDuration, stepDuration } = storeToRefs(store)
-const tripletEnabled = ref(false) // TODO save to state
 
 // computed
 const track = computed(() => store.getTrackById(props.trackId))
+const tripletEnabled = computed(() => track.value.tripletEnabled)
 const trackPositions = computed(() => track.value.positions)
 const expectedPositions = computed(() => Array.from({ length: stepCount.value }, (_, i) => i / stepCount.value))
 const expectedTripletPositions = computed(() => Array.from({ length: tripletStepCount.value }, (_, i) => i / tripletStepCount.value))
@@ -35,11 +37,6 @@ const tripletSteps = computed(() => expectedTripletPositions.value.map(ep =>
 // })
 
 function onStepClick(stepIndex: number) {
-    if (stepIndex % beatUnit.value == 0) {
-        let tripletStepIndex = stepIndex * (3 / beatUnit.value)
-        // tripletSteps.value[tripletStepIndex] = steps.value[stepIndex] // TODO
-    }
-
     let didEnable = !steps.value[stepIndex]
     let position = stepIndex / stepCount.value
 
@@ -52,11 +49,6 @@ function onStepClick(stepIndex: number) {
 }
 
 function onTripletStepClick(tripletStepIndex: number) {
-    if (tripletStepIndex % 3 == 0) {
-        let stepIndex = tripletStepIndex * (beatUnit.value / 3)
-        // steps.value[stepIndex] = tripletSteps.value[tripletStepIndex] // TODO
-    }
-
     let didEnable = !tripletSteps.value[tripletStepIndex]
     let position = tripletStepIndex / tripletStepCount.value
 
@@ -66,6 +58,11 @@ function onTripletStepClick(tripletStepIndex: number) {
     else {
         store.removeLoopSample(props.trackId, position)
     }
+}
+
+function onTripletCheckboxChange(e: Event) {
+    let enabled = (e.target as HTMLInputElement).checked
+    store.tripletEnabledChange(props.trackId, enabled)
 }
 
 // TODO
@@ -92,7 +89,7 @@ function onTripletStepClick(tripletStepIndex: number) {
     <div class="flexbox-row">
         <div>
             triplet
-            <input type="checkbox" v-model="tripletEnabled">
+            <input type="checkbox" :checked="tripletEnabled" @change="onTripletCheckboxChange">
         </div>
         <div class="flex-1">
             <div class="step-container">

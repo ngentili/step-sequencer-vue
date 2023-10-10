@@ -296,6 +296,7 @@ function init() {
             volume: 1,
             positions: [],
             sampleUrl: './audio/kick.mp3',
+            tripletEnabled: false,
         },
         {
             id: 'snare_0',
@@ -304,6 +305,7 @@ function init() {
             volume: 1,
             positions: [],
             sampleUrl: './audio/snare.mp3',
+            tripletEnabled: false,
         },
         {
             id: 'hihat_0',
@@ -312,6 +314,7 @@ function init() {
             volume: 1,
             positions: [],
             sampleUrl: './audio/hihat.mp3',
+            tripletEnabled: false,
         }
     ]
 

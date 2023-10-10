@@ -5,6 +5,7 @@ export interface Track {
     pan: number
     positions: number[]
     sampleUrl: string
+    tripletEnabled: boolean
 }
 
 export class XAudioNode<T extends AudioNode = AudioNode> {

@@ -98,6 +98,9 @@ export const useSequencerStore = defineStore('sequencer', {
             }
             this.getTrackById(trackId).pan = value
         },
+        tripletEnabledChange(trackId: string, enabled: boolean) {
+            this.getTrackById(trackId).tripletEnabled = enabled
+        },
         addLoopSample(trackId: string, position: number) {
             let track = this.getTrackById(trackId)
             if (track.positions.find(t => t === position)) {
