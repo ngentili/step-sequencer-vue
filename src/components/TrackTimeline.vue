@@ -27,14 +27,17 @@ const steps = computed(() => expectedPositions.value.map(ep =>
 const tripletSteps = computed(() => expectedTripletPositions.value.map(ep =>
     trackPositions.value.find(st => ep === st) !== undefined))
 
-// TODO
-// watch(tripletEnabled, () => {
-//     if (!tripletEnabled.value) {
-//         // disable non-triplet steps when triplet is unchecked
-//         tripletSteps.value = tripletSteps.value
-//             .map((v, i) => i % 3 == 0 ? v : false)
-//     }
-// })
+// triplet enable change
+watch(tripletEnabled, () => {
+    // disable any triplet-only steps when triplet is unchecked
+    if (!tripletEnabled.value) {
+        // remove all trackPositions that are in expectedTripletPositions but not in expectedPositions
+        let toRemove = trackPositions.value.filter(p =>
+            expectedTripletPositions.value.includes(p) && !expectedPositions.value.includes(p))
+
+        toRemove.forEach(p => store.removeLoopSample(props.trackId, p))
+    }
+})
 
 function onStepClick(stepIndex: number) {
     let didEnable = !steps.value[stepIndex]
