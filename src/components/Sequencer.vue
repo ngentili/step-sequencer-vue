@@ -64,6 +64,7 @@ watch(isPlaying, async (newIsPlaying, oldIsPlaying) => {
     }
 
     if (newIsPlaying) {
+        firstRun.value = true
         worker.addEventListener('message', workerListener)
         worker.postMessage({ type: 'intervalStart', interval } as IntervalStartData)
         await audioContext.resume()
