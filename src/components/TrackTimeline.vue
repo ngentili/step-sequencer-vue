@@ -69,12 +69,13 @@ function onTripletCheckboxChange(e: Event) {
     store.tripletEnabledChange(props.trackId, enabled)
 }
 
-// // step count change
-// watch(stepCount, () => {
-//     // remove all positions
-//     // TODO not working
-//     track.value.positions.forEach(p => store.removeLoopSample(props.trackId, p))
-// })
+// step count change
+watch(stepCount, () => {
+    throw new Error('not implemented')
+    // remove all positions
+    // TODO not working, removing while iterating
+    // track.value.positions.forEach(p => store.removeLoopSample(props.trackId, p))
+})
 </script>
 
 <template>
