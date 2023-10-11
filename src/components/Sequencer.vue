@@ -32,18 +32,7 @@ const worker = new Worker(
 //
 
 const store = useSequencerStore()
-const { tempo, beatsPerMeasure, beatUnit, swing, isPlaying, tracks, trackIds, measureDuration, stepCount, stepPrecision, stepDuration } = storeToRefs(store)
-
-// TODO tempo change ok, beats added/removed broken
-// // measureDuration change
-// watch(measureDuration, (newLoopDuration, oldLoopDuration) => {
-//     throw new Error('not implemented')
-// })
-
-// beatUnit change
-watch(beatUnit, (newBeatUnit, oldBeatUnit) => {
-    throw new Error('not implemented')
-})
+const { swing, isPlaying, tracks, trackIds, measureDuration, stepCount, stepDuration } = storeToRefs(store)
 
 const firstRun = ref(true)
 
@@ -208,8 +197,9 @@ function doSchedulingRun() {
 
                 if (schedulingWindow.isInside(targetTime)) {
 
-                    if (trackSamples.find(ts => ts.time === targetTime)) {
-                        // already scheduled
+                    if (trackSamples.find(ts => Math.abs(ts.time - targetTime) < (stepDuration.value / 2))) {
+                        // already scheduled or too close to existing, allow greater value to account for tempo change
+                        // TODO check if this breaks triplets or swung notes
                         continue
                     }
 
@@ -347,16 +337,8 @@ onMounted(() => {
 
 onUnmounted(() => {
     unscheduleAll()
-
     trackIds.value.forEach(trackId => store.removeTrack(trackId))
-
-    // trackGainNodeMap.clear()
-    // scheduledTrackSamples.clear()
-    // audioBufferMap.clear()
 })
 </script>
 
-<template>
-    <!-- <button @click="init()">Add All</button> -->
-    <!-- <button @click="store.$state.tracks = []">Remove All</button> -->
-</template>
+<template></template>

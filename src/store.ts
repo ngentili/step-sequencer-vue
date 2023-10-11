@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia'
 import type { Track } from './models'
 
-type BeatValue = 1 | 2 | 4 | 8 | 16 | 32
-
 export interface SequencerState {
     tempo: number
     beatsPerMeasure: number
@@ -57,6 +55,8 @@ export const useSequencerStore = defineStore('sequencer', {
             let qs = qsParams.toString()
             return `${window.location.host}${window.location.pathname}?${qs}`
         },
+        expectedPositions(state: SequencerState): number[] { return (() => Array.from({ length: this.stepCount }, (_, i) => i / this.stepCount))() },
+        expectedTripletPositions(state: SequencerState): number[] { return (() => Array.from({ length: this.tripletStepCount }, (_, i) => i / this.tripletStepCount))() },
     },
     actions: {
         tempoChange(value: number) {

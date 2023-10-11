@@ -3,8 +3,8 @@ import { useSequencerStore } from '@/store'
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 
-// TODO check for unexpected positions
 // TODO click and drag step enable/disable
+// TODO shift/ctrl click fill/clear
 
 const props = defineProps<{
     trackId: string
@@ -13,14 +13,12 @@ const props = defineProps<{
 const store = useSequencerStore()
 
 // refs
-const { beatUnit, stepCount, tripletStepCount, measureDuration, stepDuration } = storeToRefs(store)
+const { beatUnit, stepCount, tripletStepCount, expectedPositions, expectedTripletPositions, beatsPerMeasure } = storeToRefs(store)
 
 // computed
 const track = computed(() => store.getTrackById(props.trackId))
 const tripletEnabled = computed(() => track.value.tripletEnabled)
 const trackPositions = computed(() => track.value.positions)
-const expectedPositions = computed(() => Array.from({ length: stepCount.value }, (_, i) => i / stepCount.value))
-const expectedTripletPositions = computed(() => Array.from({ length: tripletStepCount.value }, (_, i) => i / tripletStepCount.value))
 
 const steps = computed(() => expectedPositions.value.map(ep =>
     trackPositions.value.find(st => ep === st) !== undefined))
@@ -69,12 +67,32 @@ function onTripletCheckboxChange(e: Event) {
     store.tripletEnabledChange(props.trackId, enabled)
 }
 
-// step count change
-watch(stepCount, () => {
-    throw new Error('not implemented')
-    // remove all positions
-    // TODO not working, removing while iterating
-    // track.value.positions.forEach(p => store.removeLoopSample(props.trackId, p))
+function adjustFloat(value: number) {
+    for (const ep of [...expectedPositions.value, ...expectedTripletPositions.value]) {
+        if (value !== ep && Math.abs(ep - value) < Number.EPSILON) {
+            return ep
+        }
+    }
+    return value
+}
+
+// beat unit change
+watch(beatUnit, () => {
+    // adjust positions to new expected positions
+    track.value.positions = track.value.positions
+        .filter(p => expectedPositions.value.includes(p) || expectedTripletPositions.value.includes(p))
+})
+
+// beats per measure change
+watch(beatsPerMeasure, (oldBeatsPerMeasure, newBeatsPerMeasure) => {
+    // let delta = newBeatsPerMeasure - oldBeatsPerMeasure
+    let ratio = newBeatsPerMeasure / oldBeatsPerMeasure
+
+    // adjust positions to new expected positions
+    track.value.positions = track.value.positions
+        .map(p => adjustFloat(p * ratio))
+        .filter(p => expectedPositions.value.includes(p) || expectedTripletPositions.value.includes(p))
+
 })
 </script>
 
