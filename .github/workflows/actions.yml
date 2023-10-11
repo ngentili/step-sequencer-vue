@@ -22,27 +22,34 @@ jobs:
 
       - name: Build
         run: |
-          npm install
+          npm ci
           npm run build
 
-      - uses: actions/upload-pages-artifact@v2
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
         with:
-          path: dist
+          name: static-site-files
+          path: dist/
 
   deploy:
     needs: build
 
     runs-on: ubuntu-latest
-    
-    permissions:
-      pages: write
-      id-token: write
-      
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    
+
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2
+      - name: Download Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: static-site-files
+          path: dist/
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+  
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+  
+      - name: Use gsutil CLI
+        run: gsutil -m rsync -rd dist/ gs://${{ secrets.BUCKET_NAME }}/
