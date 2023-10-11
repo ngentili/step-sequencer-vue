@@ -73,7 +73,7 @@ export const useSequencerStore = defineStore('sequencer', {
         },
         beatUnitChange(value: number) {
             // check if positive power of 2
-            if (value < 2 || (value & (value - 1)) !== 0) {
+            if (value < 1 || (value & (value - 1)) !== 0) {
                 throw new Error(`invalid beatUnit: ${value}`)
             }
             this.beatUnit = value

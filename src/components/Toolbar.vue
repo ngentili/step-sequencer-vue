@@ -15,7 +15,37 @@ function onBeatsPerMeasureChange(e: Event) {
 }
 function onBeatUnitChange(e: Event) {
     let value = (e.target as HTMLInputElement).valueAsNumber
-    store.beatUnitChange(value)
+    let newValue: number
+
+    let prev = beatUnit.value
+    let prevPowerOf2 = Math.log2(prev)
+
+    if (value - prev === 1) {
+        // spinbox up
+        newValue = Math.pow(2, prevPowerOf2 + 1)
+    }
+    else if (value - prev === -1) {
+        // spinbox down
+        newValue = Math.pow(2, prevPowerOf2 - 1)
+    }
+    else if (value === prev) {
+        // no change
+        return
+    }
+    else if ((value & (value - 1)) !== 0) {
+        // manual input, adjust to nearest power of 2
+        newValue = Math.pow(2, Math.round(Math.log2(value)))
+    }
+    else {
+        // manual input, power of 2
+        newValue = value
+    }
+
+    if (isNaN(newValue)) {
+        return
+    }
+
+    store.beatUnitChange(newValue)
 }
 function onSwingChange(e: Event) {
     let value = (e.target as HTMLInputElement).valueAsNumber
@@ -40,8 +70,8 @@ async function onShareClick(e: Event) {
         <span>beatsPerMeasure</span>
     </div>
     <div>
-        <input :style="{ width: '40px' }" type="number" placeholder="beat duration" :value="beatUnit" min="2" max="20"
-            step="2" @change="onBeatUnitChange">
+        <input :style="{ width: '40px' }" type="number" placeholder="beat duration" :value="beatUnit" min="1"
+            @change="onBeatUnitChange">
         <span>beatUnit</span>
     </div>
     <div>
