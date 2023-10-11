@@ -2,9 +2,10 @@
 import Toolbar from './components/Toolbar.vue'
 import TrackControl from './components/TrackControl.vue'
 import TrackTimeline from './components/TrackTimeline.vue'
-import Sequencer from './components/Sequencer.vue';
-import { useSequencerStore } from './store';
-import { storeToRefs } from 'pinia';
+import Sequencer from './components/Sequencer.vue'
+import { useSequencerStore } from './store'
+import { storeToRefs } from 'pinia'
+import Toast from './components/Toast.vue'
 
 const { trackIds } = storeToRefs(useSequencerStore())
 </script>
@@ -20,6 +21,7 @@ const { trackIds } = storeToRefs(useSequencerStore())
     </div>
 
     <Sequencer />
+    <Toast />
 </template>
 
 <style scoped>

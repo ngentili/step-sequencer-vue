@@ -51,11 +51,14 @@ function onSwingChange(e: Event) {
     let value = (e.target as HTMLInputElement).valueAsNumber
     store.swingChange(value)
 }
-function onPlayingChange(e: Event) {
+function onPlayingClick(e: MouseEvent) {
     store.playingChange(!isPlaying.value)
 }
-async function onShareClick(e: Event) {
+async function onShareClick(e: MouseEvent) {
     await navigator.clipboard.writeText(shareUrl.value)
+}
+function onAddTrackClick(e: MouseEvent) {
+
 }
 </script>
 
@@ -80,10 +83,13 @@ async function onShareClick(e: Event) {
         <span>swing</span>
     </div>
     <div>
-        <button @click="onPlayingChange">Play/Stop</button>
+        <button @click="onPlayingClick">Play/Stop</button>
         <span>{{ isPlaying }}</span>
     </div>
     <div>
         <button @click="onShareClick">Copy URL</button>
+    </div>
+    <div>
+        <button @click="onAddTrackClick">Add Track</button>
     </div>
 </template>

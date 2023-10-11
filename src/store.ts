@@ -138,5 +138,13 @@ export const useSequencerStore = defineStore('sequencer', {
             this.tracks = loadedState.tracks ?? initialState.tracks
             this.stepPrecision = loadedState.stepPrecision ?? initialState.stepPrecision
         },
+        // clearTrackPositions(trackId: string) {
+        //     let track = this.getTrackById(trackId)
+        //     track.positions = []
+        // },
+        // fillTrackPositions(trackId: string, triplet: boolean) {
+        //     let track = this.getTrackById(trackId)
+        //     track.positions = Array.from({ length: this.stepCount }, (_, i) => i / this.stepCount)
+        // },
     },
 })
