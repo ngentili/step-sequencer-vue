@@ -26,14 +26,25 @@ function onPanChange(e: Event) {
             {{ track.name }}
         </div>
         <div>
-            <input type="range" min="0" max="1" step="0.01" :value="track.volume" @change="onVolumeChange">
+            <input class="volume-slider" type="range" min="0" max="1" step="0.01" :value="track.volume"
+                @change="onVolumeChange">
         </div>
         <div>
             <datalist :id="`pan-datalist-${trackId}`">
                 <option value="0"></option>
             </datalist>
-            <input type="range" min="-1" max="1" step="0.01" :list="`pan-datalist-${trackId}`" :value="track.pan"
-                @change="onPanChange">
+            <input class="pan-slider" type="range" min="-1" max="1" step="0.01" :list="`pan-datalist-${trackId}`"
+                :value="track.pan" @change="onPanChange">
         </div>
     </div>
 </template>
+
+<style scoped>
+.volume-slider {
+    width: 70px;
+}
+
+.pan-slider {
+    width: 70px;
+}
+</style>
