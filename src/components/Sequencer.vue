@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useSequencerStore, type SequencerState } from '@/store';
+import { useSequencerStore, type SequencerState, useUiStore } from '@/store';
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia'
 import { XAudioNode, type Track, TimeWindow, type ScheduledSample } from '../models'
@@ -30,6 +30,8 @@ const worker = new Worker(
 //
 // state
 //
+
+const uiStore = useUiStore()
 
 const store = useSequencerStore()
 const { swing, isPlaying, tracks, trackIds, measureDuration, stepCount, stepDuration } = storeToRefs(store)

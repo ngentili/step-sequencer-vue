@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { useSequencerStore } from '@/store';
+import { useSequencerStore, useUiStore } from '@/store';
 import { storeToRefs } from 'pinia';
+import Modal from './modals/Modal.vue';
 
 const store = useSequencerStore()
 const { tempo, beatsPerMeasure, beatUnit, swing, isPlaying, shareUrl } = storeToRefs(store)
+
+const uiStore = useUiStore()
 
 function onTempoChange(e: Event) {
     let value = (e.target as HTMLInputElement).valueAsNumber
@@ -58,38 +61,41 @@ async function onShareClick(e: MouseEvent) {
     await navigator.clipboard.writeText(shareUrl.value)
 }
 function onAddTrackClick(e: MouseEvent) {
-
+    uiStore.showModal(Modal, null, (o) => { }, () => { })
 }
 </script>
 
 <template>
     <div>
-        <input :style="{ width: '40px' }" type="number" placeholder="tempo" :value="tempo" min="1" @change="onTempoChange">
-        <span>tempo</span>
-    </div>
-    <div>
-        <input :style="{ width: '40px' }" type="number" placeholder="beats per measure" :value="beatsPerMeasure" min="2"
-            max="20" @change="onBeatsPerMeasureChange">
-        <span>beatsPerMeasure</span>
-    </div>
-    <div>
-        <input :style="{ width: '40px' }" type="number" placeholder="beat duration" :value="beatUnit" min="1"
-            @change="onBeatUnitChange">
-        <span>beatUnit</span>
-    </div>
-    <div>
-        <input :style="{ width: '100px' }" type="range" placeholder="swing" :value="swing" min="0" max="50"
-            @change="onSwingChange">
-        <span>swing</span>
-    </div>
-    <div>
-        <button @click="onPlayingClick">Play/Stop</button>
-        <span>{{ isPlaying }}</span>
-    </div>
-    <div>
-        <button @click="onShareClick">Copy URL</button>
-    </div>
-    <div>
-        <button @click="onAddTrackClick">Add Track</button>
+        <div>
+            <input :style="{ width: '40px' }" type="number" placeholder="tempo" :value="tempo" min="1"
+                @change="onTempoChange">
+            <span>tempo</span>
+        </div>
+        <div>
+            <input :style="{ width: '40px' }" type="number" placeholder="beats per measure" :value="beatsPerMeasure" min="2"
+                max="20" @change="onBeatsPerMeasureChange">
+            <span>beatsPerMeasure</span>
+        </div>
+        <div>
+            <input :style="{ width: '40px' }" type="number" placeholder="beat duration" :value="beatUnit" min="1"
+                @change="onBeatUnitChange">
+            <span>beatUnit</span>
+        </div>
+        <div>
+            <input :style="{ width: '100px' }" type="range" placeholder="swing" :value="swing" min="0" max="50"
+                @change="onSwingChange">
+            <span>swing</span>
+        </div>
+        <div>
+            <button @click="onPlayingClick">Play/Stop</button>
+            <span>{{ isPlaying }}</span>
+        </div>
+        <div>
+            <button @click="onShareClick">Copy URL</button>
+        </div>
+        <div>
+            <button @click="onAddTrackClick">Add Track</button>
+        </div>
     </div>
 </template>

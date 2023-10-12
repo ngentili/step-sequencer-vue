@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import type { Track } from './models'
+import { markRaw } from 'vue'
 
 export interface SequencerState {
     tempo: number
@@ -147,4 +148,50 @@ export const useSequencerStore = defineStore('sequencer', {
         //     track.positions = Array.from({ length: this.stepCount }, (_, i) => i / this.stepCount)
         // },
     },
+})
+
+export interface ToastMessage {
+    id: string
+    message: string
+}
+
+export interface ModalConfig {
+    view: any
+    input?: any
+    onSubmit?: (output: any) => void
+    onCancel?: () => void
+}
+
+export interface UiState {
+    messages: ToastMessage[]
+    modal: ModalConfig | null
+}
+
+const initialUiState: UiState = {
+    messages: [],
+    modal: null,
+}
+
+export const useUiStore = defineStore('ui', {
+    state: () => initialUiState,
+    actions: {
+        toast(message: string) {
+            let id: string = crypto.randomUUID()
+
+            // needs to be re-assigned for watcher to pick up differences
+            this.messages = [...this.messages, { id, message }]
+
+            setTimeout(() => {
+                this.messages = this.messages.filter((msg: ToastMessage) => msg.id !== id)
+            }, 5000)
+        },
+        showModal<T, S>(view: any, input?: T, afterSubmit?: (output: S) => void, afterCancel?: () => void) {
+            this.modal = {
+                view: markRaw(view),
+                input: input,
+                onSubmit: afterSubmit,
+                onCancel: afterCancel,
+            }
+        },
+    }
 })

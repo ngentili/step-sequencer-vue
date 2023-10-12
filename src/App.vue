@@ -1,19 +1,33 @@
 <script setup lang="ts">
-import Toolbar from './components/Toolbar.vue'
-import TrackControl from './components/TrackControl.vue'
-import TrackTimeline from './components/TrackTimeline.vue'
-import Sequencer from './components/Sequencer.vue'
-import { useSequencerStore } from './store'
+import Sequencer from './components/Sequencer.vue';
+import Toast from './components/Toast.vue';
+import Toolbar from './components/Toolbar.vue';
+import TrackControl from './components/TrackControl.vue';
+import TrackTimeline from './components/TrackTimeline.vue';
+import { useSequencerStore, useUiStore } from './store'
 import { storeToRefs } from 'pinia'
-import Toast from './components/Toast.vue'
 
 const { trackIds } = storeToRefs(useSequencerStore())
+const { modal } = storeToRefs(useUiStore())
+
+function onModalSubmit(output: any) {
+    if (modal.value?.onSubmit) {
+        modal.value.onSubmit(output)
+    }
+    modal.value = null
+}
+
+function onModalCancel() {
+    if (modal.value?.onCancel) {
+        modal.value.onCancel()
+    }
+    modal.value = null
+}
+
 </script>
 
 <template>
-    <div>
-        <Toolbar />
-    </div>
+    <Toolbar />
 
     <div class="track-container" v-for="trackId in trackIds">
         <TrackControl class="flex-1" :trackId="trackId" />
@@ -22,6 +36,9 @@ const { trackIds } = storeToRefs(useSequencerStore())
 
     <Sequencer />
     <Toast />
+
+    <component v-if="modal" :is="modal.view" :input="modal.input" @submit="onModalSubmit" @cancel="onModalCancel">
+    </component>
 </template>
 
 <style scoped>
