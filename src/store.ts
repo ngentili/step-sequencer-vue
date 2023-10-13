@@ -185,7 +185,7 @@ export const useUiStore = defineStore('ui', {
                 this.messages = this.messages.filter((msg: ToastMessage) => msg.id !== id)
             }, 5000)
         },
-        showModal<T, S>(view: any, input?: T, afterSubmit?: (output: S) => void, afterCancel?: () => void) {
+        showModal<T = any, S = any>(view: any, input?: T, afterSubmit?: (output: S) => void, afterCancel?: () => void) {
             this.modal = {
                 view: markRaw(view),
                 input: input,

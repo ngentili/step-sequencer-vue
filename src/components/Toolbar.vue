@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useSequencerStore, useUiStore } from '@/store';
 import { storeToRefs } from 'pinia';
-import Modal from './modals/Modal.vue';
+import NewTrackModal from './modals/NewTrackModal.vue';
 
 const store = useSequencerStore()
 const { tempo, beatsPerMeasure, beatUnit, swing, isPlaying, shareUrl } = storeToRefs(store)
@@ -61,7 +61,23 @@ async function onShareClick(e: MouseEvent) {
     await navigator.clipboard.writeText(shareUrl.value)
 }
 function onAddTrackClick(e: MouseEvent) {
-    uiStore.showModal(Modal, null, (o) => { }, () => { })
+    uiStore.showModal<null, { name: string, url: string }>(
+        NewTrackModal,
+        null,
+        ({ name, url }) => {
+            uiStore.toast('not implemented')
+            // store.addTrack({
+            //     id: crypto.randomUUID(),
+            //     name: name,
+            //     pan: 0,
+            //     positions: [],
+            //     sampleUrl: url,
+            //     tripletEnabled: false,
+            //     volume: 1,
+            // })
+        },
+        () => { },
+    )
 }
 </script>
 
