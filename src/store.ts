@@ -118,11 +118,19 @@ export const useSequencerStore = defineStore('sequencer', {
             }
             track.positions.splice(idx, 1)
         },
-        addTrack(track: Track) {
-            if (this.trackIds.includes(track.id)) {
-                throw new Error(`trackId already exists: ${track.id}`)
-            }
-            this.tracks.push(track)
+        addTrack(name: string, url: string) {
+            // if (this.trackIds.includes(track.id)) {
+            //     throw new Error(`trackId already exists: ${track.id}`)
+            // }
+            this.tracks.push({
+                id: crypto.randomUUID(),
+                name: name,
+                pan: 0,
+                positions: [],
+                sampleUrl: url,
+                tripletEnabled: false,
+                volume: 1,
+            })
         },
         removeTrack(trackId: string) {
             let idx = this.tracks.findIndex(track => track.id === trackId)

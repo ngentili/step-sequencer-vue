@@ -3,6 +3,7 @@ import { useSequencerStore, type SequencerState, useUiStore } from '@/store';
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia'
 import { XAudioNode, type Track, TimeWindow, type ScheduledSample } from '../models'
+import { drumSamples } from '@/asset-map';
 
 //
 // worker
@@ -281,37 +282,9 @@ function unscheduleAll() {
 }
 
 function init() {
-    let testTracks: Track[] = [
-        {
-            id: 'kick_0',
-            name: 'kick',
-            pan: 0,
-            volume: 1,
-            positions: [],
-            sampleUrl: './audio/kick.mp3',
-            tripletEnabled: false,
-        },
-        {
-            id: 'snare_0',
-            name: 'snare',
-            pan: 0,
-            volume: 1,
-            positions: [],
-            sampleUrl: './audio/snare.mp3',
-            tripletEnabled: false,
-        },
-        {
-            id: 'hihat_0',
-            name: 'hihat',
-            pan: 0,
-            volume: 1,
-            positions: [],
-            sampleUrl: './audio/hihat.mp3',
-            tripletEnabled: false,
-        }
-    ]
-
-    testTracks.forEach(track => store.addTrack(track))
+    store.addTrack('kick', drumSamples.DRUM_KICK_1)
+    store.addTrack('snare', drumSamples.DRUM_SNARE_1)
+    store.addTrack('hihat', drumSamples.DRUM_HAT_1)
 }
 
 // load

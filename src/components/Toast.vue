@@ -23,6 +23,7 @@ const { messages } = storeToRefs(useUiStore())
     max-width: 40%;
     max-height: 100vh;
     overflow: hidden;
+    z-index: 100;
 }
 
 .toast-message {
