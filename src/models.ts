@@ -11,20 +11,24 @@ export interface Track {
 export class XAudioNode<T extends AudioNode = AudioNode> {
 
     audioNode: T
-    private inputs: XAudioNode[]
+    inputs: XAudioNode[]
+    outputs: (XAudioNode | AudioDestinationNode)[]
 
     constructor(audioNode: T) {
         this.audioNode = audioNode
         this.inputs = []
+        this.outputs = []
     }
 
     connectTo(destination: XAudioNode | AudioDestinationNode) {
         if (destination instanceof AudioDestinationNode) {
             this.audioNode.connect(destination)
+            this.outputs.push(destination)
         }
         else {
             this.audioNode.connect(destination.audioNode)
             destination.inputs.push(this)
+            this.outputs.push(destination)
         }
     }
 

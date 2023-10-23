@@ -83,7 +83,7 @@ document.addEventListener('keydown', e => {
     </div>
     <div>
         <input :style="{ width: '100px' }" type="range" placeholder="swing" :value="swing" min="0" max="50"
-            @change="onSwingChange">
+            @input="onSwingChange">
         <span>swing</span>
     </div>
     <div>

@@ -27,14 +27,14 @@ function onPanChange(e: Event) {
         </div>
         <div>
             <input class="volume-slider" type="range" min="0" max="1" step="0.01" :value="track.volume"
-                @change="onVolumeChange">
+                @input="onVolumeChange">
         </div>
         <div>
             <datalist :id="`pan-datalist-${trackId}`">
                 <option value="0"></option>
             </datalist>
             <input class="pan-slider" type="range" min="-1" max="1" step="0.01" :list="`pan-datalist-${trackId}`"
-                :value="track.pan" @change="onPanChange">
+                :value="track.pan" @input="onPanChange">
         </div>
     </div>
 </template>
