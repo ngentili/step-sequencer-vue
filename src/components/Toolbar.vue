@@ -51,12 +51,19 @@ function onSwingChange(e: Event) {
     let value = (e.target as HTMLInputElement).valueAsNumber
     store.swingChange(value)
 }
-function onPlayingChange(e: Event) {
+function onPlayingChange() {
     store.playingChange(!isPlaying.value)
 }
 async function onShareClick(e: Event) {
     await navigator.clipboard.writeText(shareUrl.value)
 }
+
+document.addEventListener('keydown', e => {
+    if (e.key === ' ' && !e.repeat) {
+        e.preventDefault()
+        onPlayingChange()
+    }
+})
 </script>
 
 <template>
