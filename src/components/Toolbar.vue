@@ -54,13 +54,13 @@ function onSwingChange(e: Event) {
     let value = (e.target as HTMLInputElement).valueAsNumber
     store.swingChange(value)
 }
-function onPlayingClick(e: MouseEvent) {
+function onPlayingClick() {
     store.playingChange(!isPlaying.value)
 }
-async function onShareClick(e: MouseEvent) {
+async function onShareClick() {
     await navigator.clipboard.writeText(shareUrl.value)
 }
-function onAddTrackClick(e: MouseEvent) {
+function onAddTrackClick() {
     uiStore.showModal<null, { name: string, url: string }>(
         NewTrackModal,
         null,
@@ -68,6 +68,13 @@ function onAddTrackClick(e: MouseEvent) {
         () => { },
     )
 }
+
+document.addEventListener('keydown', e => {
+    if (e.key === ' ' && !e.repeat) {
+        e.preventDefault()
+        onPlayingClick()
+    }
+})
 </script>
 
 <template>

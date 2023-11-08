@@ -87,8 +87,11 @@ watch(trackIds, async (newTrackIds, oldtrackIds) => {
 
         await loadAudioBuffer(track.sampleUrl)
 
+        let trackPanNode = new XAudioNode(new PannerNode(audioContext))
+        trackPanNode.connectTo(masterGainNode)
+
         let trackGainNode = new XAudioNode(new GainNode(audioContext))
-        trackGainNode.connectTo(masterGainNode)
+        trackGainNode.connectTo(trackPanNode)
 
         trackGainNodeMap.set(trackId, trackGainNode)
     }
@@ -231,7 +234,12 @@ function scheduleOneSample(track: Track, absoluteTime: number) {
     }
 
     let audioBuffer = getAudioBuffer(track.sampleUrl)
-    let trackGainNode = getTrackGainNode(track.id)
+    
+    let trackGainNode = getTrackGainNode(track.id);
+    (trackGainNode.audioNode as GainNode).gain.value = track.volume
+
+    let trackPanNode = trackGainNode.outputs[0];
+    ((trackPanNode as XAudioNode<AudioNode>).audioNode as PannerNode).positionX.value = track.pan
 
     let sourceNode = new XAudioNode(new AudioBufferSourceNode(audioContext, { buffer: audioBuffer }))
     sourceNode.connectTo(trackGainNode)
